@@ -25,7 +25,7 @@ Los cuatro hacen lo mismo: validan una transferencia SPEI con la fecha, el monto
 
 ## Más allá de estos ejemplos
 
-- **SDK de Python y de JavaScript**: en construcción — mientras tanto, estos ejemplos y la [referencia completa](https://docs.veriko.mx/openapi.yaml) cubren cualquier lenguaje con un cliente HTTP.
+- **SDK oficiales**: [Python](https://github.com/veriko-mx-labs/veriko-python) (`veriko`) y [JavaScript/TypeScript](https://github.com/veriko-mx-labs/veriko-js) (`@veriko/sdk`). Para cualquier otro lenguaje, estos ejemplos y la [referencia completa](https://docs.veriko.mx/openapi.yaml).
 - **Webhooks, reintentos, idempotencia**: [Verificar un pago SPEI por API](https://veriko.mx/resources/verificar-pago-api).
 - **Comparativa con otras APIs de CEP**: [veriko.mx/resources/api-cep-comparativa](https://veriko.mx/resources/api-cep-comparativa).
 
