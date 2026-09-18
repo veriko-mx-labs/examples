@@ -1,0 +1,39 @@
+name: Lint examples
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Shell syntax (curl example)
+        run: bash -n curl/validate.sh
+
+      - name: Node.js syntax (node example)
+        run: node --check node/validate.mjs
+
+      - name: Python syntax (python example)
+        run: python -m py_compile python/validate.py
+
+      - name: PHP syntax (php example)
+        run: php -l php/validate.php
