@@ -32,6 +32,12 @@ jobs:
       - name: Node.js syntax (node example)
         run: node --check node/validate.mjs
 
+      - name: Install contract checker
+        run: npm ci
+
+      - name: Routes exist and are M2M
+        run: npm test
+
       - name: Python syntax (python example)
         run: python -m py_compile python/validate.py
 
