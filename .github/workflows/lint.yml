@@ -1,0 +1,54 @@
+name: Lint examples
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  autoria:
+    if: github.event_name != 'workflow_dispatch'
+    uses: veriko-mx-labs/.github/.github/workflows/autoria.yml@82b993be09334e9bf3f05a57073d9b95e5a749af
+    secrets:
+      config: ${{ secrets.VERIKO_LABS_AUTORIA_CONFIG }}
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.1'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20'
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+
+      - name: Shell syntax (curl example)
+        run: bash -n curl/validate.sh
+
+      - name: Node.js syntax (node example)
+        run: node --check node/validate.mjs
+
+      - name: Install contract checker
+        run: npm ci
+
+      - name: Routes exist and are M2M
+        run: npm test
+
+      - name: Python syntax (python example)
+        run: python -m py_compile python/validate.py
+
+      - name: PHP syntax (php example)
+        run: php -l php/validate.php
