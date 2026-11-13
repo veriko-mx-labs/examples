@@ -1,0 +1,82 @@
+name: Bug report
+description: Report something that does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste API keys, receipts, account numbers or customer data. Replace them with placeholders.
+        For a security vulnerability, follow the [security policy](https://github.com/veriko-mx-labs/examples/security/policy) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happens
+      description: "Describe the behavior you see."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: "Give the smallest sequence that reproduces it."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expect
+      description: "Describe the behavior the documentation or the spec leads you to expect."
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: "Example"
+      description: "The path of the file, for example `node/raw/validate.mjs`."
+    validations:
+      required: true
+  - type: dropdown
+    id: v0
+    attributes:
+      label: "Language"
+      options:
+        - "cURL"
+        - "Node.js (raw)"
+        - "Node.js (SDK)"
+        - "Python (raw)"
+        - "Python (SDK)"
+        - "PHP"
+    validations:
+      required: true
+  - type: input
+    id: v1
+    attributes:
+      label: "Runtime version"
+      placeholder: "Node.js 22, Python 3.12 or PHP 8.3"
+    validations:
+      required: true
+  - type: input
+    id: v2
+    attributes:
+      label: "Operating system"
+    validations:
+      required: true
+  - type: input
+    id: request-id
+    attributes:
+      label: "request_id"
+      description: "The `request_id` of the error response, when the API answered with an error."
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or logs
+      description: "Paste the error or the response body. Remove secrets first."
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the open issues.
+          required: true
+        - label: I removed API keys and personal data from this report.
+          required: true

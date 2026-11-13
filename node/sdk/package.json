@@ -1,0 +1,8 @@
+{
+  "name": "veriko-node-sdk-examples",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@veriko-mx/sdk": "^0.6.0"
+  }
+}

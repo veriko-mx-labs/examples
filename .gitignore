@@ -1,0 +1,10 @@
+node_modules/
+vendor/
+.venv/
+__pycache__/
+*.pyc
+# Files the examples write when you run them
+*.csv
+*.zip
+cep-*.pdf
+cep-*.xml
