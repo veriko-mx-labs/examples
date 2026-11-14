@@ -1,24 +1,24 @@
-// Retry a validation safely: one `Idempotency-Key` per business attempt, backoff on transient failures.
+// Reintenta una validación sin riesgo: un `Idempotency-Key` por intento de negocio y espera creciente ante fallas pasajeras.
 //
 //   VERIKO_API_KEY=veriko_... node node/raw/idempotency-and-retry.mjs
 //
-// The key identifies the attempt, so derive it from your own identifier (here an order number),
-// never from a random value per send. The API stores it for 24 hours:
-//   - same key, same body: the original response comes back with `Idempotent-Replayed: true`;
-//   - same key, different body: 422 `idempotency_key_reused`;
-//   - same key while the first request runs: 409 `idempotency_key_in_progress`.
-// `withRetry` repeats the request on 408, 429, 500, 502, 503, 504 and on network failures,
-// waiting `Retry-After` when present. It never retries `quota_exceeded`: that 429 lasts until
-// the plan renews.
-// The second call below replays the first: it consumes no additional quota. The transfer is
-// example data: expect `not_found`.
+// La clave identifica el intento, así que derívala de tu propio identificador (aquí un número de
+// pedido), nunca de un valor aleatorio por envío. La API la guarda 24 horas:
+//   - misma clave y mismo cuerpo: vuelve la respuesta original con `Idempotent-Replayed: true`;
+//   - misma clave y cuerpo distinto: 422 `idempotency_key_reused`;
+//   - misma clave mientras corre la primera petición: 409 `idempotency_key_in_progress`.
+// `withRetry` repite la petición con 408, 429, 500, 502, 503, 504 y ante fallas de red, y espera
+// `Retry-After` cuando viene. Nunca reintenta `quota_exceeded`: ese 429 dura hasta que el plan
+// se renueva.
+// La segunda llamada de abajo repite la primera: no consume más cuota. La transferencia es de
+// ejemplo: espera `not_found`.
 //
 // veriko:operation POST /validate headers=Idempotency-Key body=send_date,amount,tracking_key,sender_bank,beneficiary_account
 // veriko:operation GET /validations/{id}
 
 import { api, pollValidation, run, SYNC_TIMEOUT_MS, withRetry } from './client.mjs';
 
-const idempotencyKey = 'example-order-4812-attempt-1';
+const idempotencyKey = 'pedido-ejemplo-4812-intento-1';
 
 const send = () =>
   api('POST', '/validate', {
@@ -41,6 +41,6 @@ run(async () => {
     if (response.status === 202) {
       validation = await pollValidation(validation.data.id, { expiresAt: validation.data.attributes.expires_at });
     }
-    console.log(`Call ${attempt}: ${validation.data.id} ${validation.data.attributes.status} replayed=${replayed}`);
+    console.log(`Llamada ${attempt}: ${validation.data.id} ${validation.data.attributes.status} replayed=${replayed}`);
   }
 });

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Register a webhook endpoint, send a test delivery and show its delivery history.
+"""Registra un endpoint de webhook, envía una entrega de prueba y muestra su historial de entregas.
 
     VERIKO_API_KEY=veriko_... python3 python/raw/webhook_register.py https://example.com/hooks/veriko [--delete]
 
-The URL must be a public HTTPS address that answers 2xx: run `webhook_receiver.py` behind a
-tunnel while you try it. The response carries the signing `secret` once; store it
-as VERIKO_WEBHOOK_SECRET for the receiver. The endpoint subscribes to all seven validation
-events, so `validation.returned` reports a later return.
+La URL debe ser una dirección HTTPS pública que responda 2xx: mientras pruebas, corre
+`webhook_receiver.py` detrás de un túnel. La respuesta trae el `secret` de firma una sola vez;
+guárdalo como VERIKO_WEBHOOK_SECRET para el receptor. El endpoint se suscribe a los siete
+eventos de validación, así que `validation.returned` avisa de una devolución posterior.
 """
 # veriko:operation POST /webhooks body=url,events,description
 # veriko:operation POST /webhooks/{id}/test
@@ -19,11 +19,11 @@ from client import api, run
 
 def main() -> None:
     if len(sys.argv) < 2:
-        sys.exit("Usage: webhook_register.py <public https URL> [--delete]")
+        sys.exit("Uso: webhook_register.py <URL https pública> [--delete]")
 
     created = api("POST", "/webhooks", body={
         "url": sys.argv[1],
-        "description": "Example endpoint",
+        "description": "Endpoint de ejemplo",
         "events": [
             "validation.completed",
             "validation.failed",
@@ -36,11 +36,11 @@ def main() -> None:
     }).body["data"]
     endpoint_id = created["id"]
     print("Endpoint", endpoint_id)
-    print("Secret (shown once):", created["attributes"]["secret"])
+    print("Secreto (se muestra una vez):", created["attributes"]["secret"])
 
-    # The test returns 200 even when delivery failed: check `delivered`.
+    # La prueba responde 200 aunque la entrega falle: revisa `delivered`.
     result = api("POST", f"/webhooks/{endpoint_id}/test").body["data"]["attributes"]
-    print(f"Test delivered={str(result['delivered']).lower()} http_status={result.get('http_status')} {result.get('error') or ''}")
+    print(f"Prueba delivered={str(result['delivered']).lower()} http_status={result.get('http_status')} {result.get('error') or ''}")
 
     deliveries = api("GET", f"/webhooks/{endpoint_id}/deliveries", query={"per_page": 5}).body["data"]
     for delivery in deliveries:
@@ -48,7 +48,7 @@ def main() -> None:
 
     if "--delete" in sys.argv:
         api("DELETE", f"/webhooks/{endpoint_id}")
-        print("Deleted", endpoint_id)
+        print("Eliminado", endpoint_id)
 
 
 run(main)

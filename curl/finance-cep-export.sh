@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Export the CEP files of a date range as a ZIP, built in the background.
+# Exporta en un ZIP los archivos de CEP de un rango de fechas, armado en segundo plano.
 #
 #   VERIKO_API_KEY=veriko_... bash curl/finance-cep-export.sh 2025-03-01 2025-03-31
 #
-# The request answers 202 with an export in `queued`. Poll it until the status is `ready`, `failed` or
-# `expired`, then download the ZIP. The file expires 24 hours after it is ready. The
-# `Idempotency-Key` makes a repeated request reuse the same export.
+# La petición responde 202 con una exportación en `queued`. Sondéala hasta que el estado sea `ready`,
+# `failed` o `expired` y luego descarga el ZIP. El archivo vence 24 horas después de quedar listo.
+# El `Idempotency-Key` hace que una petición repetida reutilice la misma exportación.
 #
 # veriko:operation POST /finance/ceps/exports headers=Idempotency-Key body=from,to
 # veriko:operation GET /finance/ceps/exports/{id}
@@ -13,12 +13,12 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-from="${1:?Usage: finance-cep-export.sh <from YYYY-MM-DD> <to YYYY-MM-DD>}"
-to="${2:?Usage: finance-cep-export.sh <from YYYY-MM-DD> <to YYYY-MM-DD>}"
+from="${1:?Uso: finance-cep-export.sh <desde AAAA-MM-DD> <hasta AAAA-MM-DD>}"
+to="${2:?Uso: finance-cep-export.sh <desde AAAA-MM-DD> <hasta AAAA-MM-DD>}"
 CEP_EXPORT_TERMINAL_STATUSES="ready failed expired"
 
 api_retry POST /finance/ceps/exports \
-  --header "Idempotency-Key: example-cep-export-${from}-${to}" \
+  --header "Idempotency-Key: ejemplo-exportacion-cep-${from}-${to}" \
   --header "Content-Type: application/json" \
   --data "{\"from\": \"${from}\", \"to\": \"${to}\"}"
 id="$(jq -r '.data.id' "$BODY_FILE")"
@@ -27,13 +27,13 @@ while true; do
   api_retry GET "/finance/ceps/exports/${id}"
   status="$(jq -r '.data.attributes.status' "$BODY_FILE")"
   if [[ " $CEP_EXPORT_TERMINAL_STATUSES " == *" $status "* ]]; then
-    [[ "$status" == "ready" ]] || { echo "Export ${id} ended as ${status}" >&2; exit 1; }
+    [[ "$status" == "ready" ]] || { echo "La exportación ${id} terminó como ${status}" >&2; exit 1; }
     break
   fi
-  echo "Export ${id}: ${status}" >&2
+  echo "Exportación ${id}: ${status}" >&2
   sleep 5
 done
 
 TIMEOUT=120 api GET "/finance/ceps/exports/${id}/download"
 cp "$BODY_FILE" "ceps-${from}-${to}.zip"
-echo "Saved ceps-${from}-${to}.zip"
+echo "Guardado ceps-${from}-${to}.zip"

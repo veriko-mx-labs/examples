@@ -1,10 +1,10 @@
-// Enqueue a validation by its fields and poll until the verdict is final.
+// Pone en cola una validación por sus campos y sondea hasta que el veredicto sea final.
 //
 //   VERIKO_API_KEY=veriko_... node node/raw/enqueue-and-poll.mjs
 //
-// `?async=1` answers 202 at once. The poll waits `Retry-After` seconds between requests, sends the
-// ETag back in `If-None-Match`, and stops at the final status or at `expires_at`.
-// Every accepted validation consumes quota. The transfer is example data: expect `not_found`.
+// `?async=1` responde 202 de inmediato. El sondeo espera `Retry-After` segundos entre peticiones,
+// devuelve el ETag en `If-None-Match` y se detiene en el estado final o en `expires_at`.
+// Cada validación aceptada consume cuota. La transferencia es de ejemplo: espera `not_found`.
 //
 // veriko:operation POST /validate?async=1 query=async body=send_date,amount,tracking_key,sender_bank,beneficiary_account,client_ref
 // veriko:operation GET /validations/{id}
@@ -20,11 +20,11 @@ run(async () => {
       tracking_key: 'MXBA20250315001234',
       sender_bank: '40012',
       beneficiary_account: '012180004412345678',
-      client_ref: 'example-order-1', // comes back on the validation and in webhooks
+      client_ref: 'pedido-ejemplo-1', // vuelve en la validación y en los webhooks
     },
   });
   const { id, attributes } = queued.body.data;
-  console.error(`Queued ${id}; the first poll is due in ${queued.body.meta?.next_poll_after_seconds ?? 2} s.`);
+  console.error(`En cola ${id}; el primer sondeo toca en ${queued.body.meta?.next_poll_after_seconds ?? 2} s.`);
 
   const validation = await pollValidation(id, { expiresAt: attributes.expires_at });
   console.log(`${id} ${validation.data.attributes.status}`);

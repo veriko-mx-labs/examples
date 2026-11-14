@@ -1,10 +1,10 @@
 <?php
-// Export the validation history as a CSV file.
+// Exporta el historial de validaciones como un archivo CSV.
 //
 //   VERIKO_API_KEY=veriko_... php php/export-validations.php
 //
-// `format` accepts `csv` and `xlsx` (default `csv`). The response is a file attachment; an
-// error comes back as JSON. Exporting consumes no quota.
+// `format` acepta `csv` y `xlsx` (`csv` por defecto). La respuesta es un archivo adjunto; un
+// error llega como JSON. Exportar no consume cuota.
 //
 // veriko:operation GET /validations/export query=format,from,to,limit
 
@@ -19,5 +19,5 @@ run(function (): void {
         'timeout' => 120,
     ]));
     file_put_contents('validations.csv', $response['body']);
-    echo 'Saved validations.csv (', strlen($response['body']), " bytes)\n";
+    echo 'Guardado validations.csv (', strlen($response['body']), " bytes)\n";
 });

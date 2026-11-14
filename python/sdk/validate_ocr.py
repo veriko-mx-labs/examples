@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Validate a SPEI transfer from a receipt image or PDF with the Python SDK.
+"""Valida una transferencia SPEI a partir de la imagen o el PDF de un comprobante con el SDK de Python.
 
     pip install -r python/sdk/requirements.txt
-    VERIKO_API_KEY=veriko_... python3 python/sdk/validate_ocr.py path/to/receipt.png
+    VERIKO_API_KEY=veriko_... python3 python/sdk/validate_ocr.py ruta/al/comprobante.png
 
-The SDK reads the file and sends it as base64. Every accepted validation consumes quota, and a
-receipt that cannot be read is charged too.
+El SDK lee el archivo y lo envía en base64. Cada validación aceptada consume cuota, y un
+comprobante que no se puede leer también se cobra.
 """
 # veriko:operation POST /validate-ocr
 import sys
@@ -13,7 +13,7 @@ import sys
 from veriko import Veriko
 
 if len(sys.argv) < 2:
-    sys.exit("Usage: validate_ocr.py <receipt file>")
+    sys.exit("Uso: validate_ocr.py <archivo del comprobante>")
 
 client = Veriko()
 

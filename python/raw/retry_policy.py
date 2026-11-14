@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Read and update the account retry policy, which re-queries validations that ended without a verdict.
+"""Consulta y actualiza la política de reintentos de la cuenta, que vuelve a consultar las validaciones que terminaron sin veredicto.
 
     VERIKO_API_KEY=veriko_... python3 python/raw/retry_policy.py
 
-A retry belongs to the original validation and consumes no extra quota. The update replaces the
-whole policy; `max_retries` and `interval_seconds` have per-plan caps (`422 retry_policy_invalid`
-above them). The policy applies to validations created afterwards.
+Un reintento pertenece a la validación original y no consume cuota extra. La actualización
+reemplaza toda la política; `max_retries` e `interval_seconds` tienen topes por plan
+(`422 retry_policy_invalid` si los rebasas). La política aplica a las validaciones que se
+creen después.
 """
 # veriko:operation GET /users/me/retry-policy
 # veriko:operation PUT /users/me/retry-policy headers=Idempotency-Key body=retry_policy,enabled,max_retries,interval_seconds,outcomes
@@ -16,19 +17,19 @@ from client import api, run, with_retry
 
 def main() -> None:
     current = api("GET", "/users/me/retry-policy").body
-    print("Current:", json.dumps(current["data"]["attributes"]))
-    print("Plan caps:", json.dumps((current.get("meta") or {}).get("caps")))
+    print("Actual:", json.dumps(current["data"]["attributes"]))
+    print("Topes del plan:", json.dumps((current.get("meta") or {}).get("caps")))
 
     updated = with_retry(lambda: api("PUT", "/users/me/retry-policy",
-                                     headers={"Idempotency-Key": "example-retry-policy-v1"}, body={
+                                     headers={"Idempotency-Key": "ejemplo-politica-reintentos-v1"}, body={
         "retry_policy": {
             "enabled": True,
             "max_retries": 3,
-            "interval_seconds": 600,  # 300 to 86400
+            "interval_seconds": 600,  # de 300 a 86400
             "outcomes": ["not_found", "cep_unavailable", "error"],
         },
     })).body
-    print("Updated:", json.dumps(updated["data"]["attributes"]))
+    print("Actualizada:", json.dumps(updated["data"]["attributes"]))
 
 
 run(main)

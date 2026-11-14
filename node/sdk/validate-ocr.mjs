@@ -1,10 +1,10 @@
-// Validate a SPEI transfer from a receipt image or PDF with the Node SDK.
+// Valida una transferencia SPEI a partir de la imagen o el PDF de un comprobante con el SDK de Node.
 //
 //   cd node/sdk && npm install
-//   VERIKO_API_KEY=veriko_... node validate-ocr.mjs path/to/receipt.png
+//   VERIKO_API_KEY=veriko_... node validate-ocr.mjs ruta/al/comprobante.png
 //
-// The SDK reads the file and sends it as base64. Every accepted validation consumes quota, and a
-// receipt that cannot be read is charged too.
+// El SDK lee el archivo y lo envía en base64. Cada validación aceptada consume cuota, y un
+// comprobante que no se puede leer también se cobra.
 //
 // veriko:operation POST /validate-ocr
 
@@ -12,7 +12,7 @@ import { Veriko } from '@veriko-mx/sdk';
 
 const receipt = process.argv[2];
 if (!receipt) {
-  console.error('Usage: node validate-ocr.mjs <receipt file>');
+  console.error('Uso: node validate-ocr.mjs <archivo del comprobante>');
   process.exit(2);
 }
 

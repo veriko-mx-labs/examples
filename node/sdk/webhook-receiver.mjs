@@ -1,12 +1,12 @@
-// Receive Veriko webhooks with the Node SDK: verify the timestamped signature and accept the old
-// secret during a rotation.
+// Recibe los webhooks de Veriko con el SDK de Node: verifica la firma con marca de tiempo y acepta
+// el secreto anterior durante una rotación.
 //
 //   cd node/sdk && npm install
-//   VERIKO_WEBHOOK_SECRET=<secret from POST /webhooks> node webhook-receiver.mjs
+//   VERIKO_WEBHOOK_SECRET=<secreto de POST /webhooks> node webhook-receiver.mjs
 //
-// VERIKO_WEBHOOK_SECRET_PREVIOUS is optional: set it for the 24 hours after you regenerate the
-// secret. `verifyWebhookTimestamped` rejects a `t` more than 5 minutes (300 s) from this machine's
-// clock and compares in constant time. Pass the raw body, not re-serialized JSON.
+// VERIKO_WEBHOOK_SECRET_PREVIOUS es opcional: defínela durante las 24 horas posteriores a regenerar
+// el secreto. `verifyWebhookTimestamped` rechaza un `t` a más de 5 minutos (300 s) del reloj de esta
+// máquina y compara en tiempo constante. Pásale el cuerpo sin procesar, no un JSON serializado de nuevo.
 //
 // veriko:receiver
 
@@ -17,7 +17,7 @@ import { verifyWebhookTimestamped } from '@veriko-mx/sdk';
 const secret = process.env.VERIKO_WEBHOOK_SECRET;
 const previousSecret = process.env.VERIKO_WEBHOOK_SECRET_PREVIOUS;
 if (!secret) {
-  console.error('Set VERIKO_WEBHOOK_SECRET to the secret returned when you registered the endpoint.');
+  console.error('Define VERIKO_WEBHOOK_SECRET con el secreto que recibiste al registrar el endpoint.');
   process.exit(1);
 }
 
@@ -39,8 +39,8 @@ createServer((req, res) => {
       res.writeHead(401).end();
       return;
     }
-    res.writeHead(200).end(); // answer first, process afterwards
+    res.writeHead(200).end(); // responde primero y procesa después
     const event = JSON.parse(rawBody.toString('utf8'));
     console.log(event.event, event.data.id, event.data.attributes.status);
   });
-}).listen(Number(process.env.PORT ?? 3000), () => console.log('Listening for webhooks'));
+}).listen(Number(process.env.PORT ?? 3000), () => console.log('Escuchando webhooks'));

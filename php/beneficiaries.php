@@ -1,11 +1,11 @@
 <?php
-// Create, list, update and delete a saved beneficiary account.
+// Crea, lista, actualiza y elimina la cuenta de un beneficiario guardado.
 //
 //   VERIKO_API_KEY=veriko_... php php/beneficiaries.php
 //
-// A beneficiary helps the receipt validation complete an account the image shows masked. The
-// account below is example data; deleting archives the beneficiary. Beneficiary calls consume no
-// quota.
+// Un beneficiario ayuda a que la validación por comprobante complete una cuenta que la imagen
+// muestra enmascarada. La cuenta de abajo es de ejemplo; eliminar archiva al beneficiario. Las
+// llamadas de beneficiarios no consumen cuota.
 //
 // veriko:operation POST /beneficiaries body=account_number,bank_code,label
 // veriko:operation GET /beneficiaries
@@ -20,17 +20,17 @@ run(function (): void {
     $created = api('POST', '/beneficiaries', ['body' => [
         'account_number' => '012180004412345678',
         'bank_code'      => '40012',
-        'label'          => 'Example supplier',
+        'label'          => 'Proveedor de ejemplo',
     ]])['body'];
     $id = $created['data']['id'];
-    echo "Created {$id}\n";
+    echo "Creado {$id}\n";
 
     $list = api('GET', '/beneficiaries')['body'];
-    echo count($list['data']), " beneficiaries\n";
+    echo count($list['data']), " beneficiarios\n";
 
-    api('PUT', "/beneficiaries/{$id}", ['body' => ['label' => 'Example supplier (renamed)']]);
-    echo "Updated {$id}\n";
+    api('PUT', "/beneficiaries/{$id}", ['body' => ['label' => 'Proveedor de ejemplo (con otro nombre)']]);
+    echo "Actualizado {$id}\n";
 
     api('DELETE', "/beneficiaries/{$id}");
-    echo "Deleted {$id}\n";
+    echo "Eliminado {$id}\n";
 });

@@ -1,49 +1,49 @@
-name: Bug report
-description: Report something that does not work as documented.
+name: Reporte de error
+description: Reporta algo que no funciona como dice la documentación.
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Do not paste API keys, receipts, account numbers or customer data. Replace them with placeholders.
-        For a security vulnerability, follow the [security policy](https://github.com/veriko-mx-labs/examples/security/policy) instead.
+        No pegues claves de API, comprobantes, números de cuenta ni datos de clientes. Reemplázalos con valores de relleno.
+        Para una vulnerabilidad de seguridad, sigue la [política de seguridad](https://github.com/veriko-mx-labs/examples/security/policy).
   - type: textarea
     id: what-happened
     attributes:
-      label: What happens
-      description: "Describe the behavior you see."
+      label: Qué pasa
+      description: "Describe el comportamiento que ves."
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: Steps to reproduce
-      description: "Give the smallest sequence that reproduces it."
+      label: Pasos para reproducirlo
+      description: "Da la secuencia más corta que lo reproduce."
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: What you expect
-      description: "Describe the behavior the documentation or the spec leads you to expect."
+      label: Qué esperas
+      description: "Describe el comportamiento que la documentación o el spec te hacen esperar."
     validations:
       required: true
   - type: input
     id: target
     attributes:
-      label: "Example"
-      description: "The path of the file, for example `node/raw/validate.mjs`."
+      label: "Ejemplo"
+      description: "La ruta del archivo, por ejemplo `node/raw/validate.mjs`."
     validations:
       required: true
   - type: dropdown
     id: v0
     attributes:
-      label: "Language"
+      label: "Lenguaje"
       options:
         - "cURL"
-        - "Node.js (raw)"
+        - "Node.js (HTTP directo)"
         - "Node.js (SDK)"
-        - "Python (raw)"
+        - "Python (HTTP directo)"
         - "Python (SDK)"
         - "PHP"
     validations:
@@ -51,32 +51,32 @@ body:
   - type: input
     id: v1
     attributes:
-      label: "Runtime version"
+      label: "Versión del intérprete"
       placeholder: "Node.js 22, Python 3.12 or PHP 8.3"
     validations:
       required: true
   - type: input
     id: v2
     attributes:
-      label: "Operating system"
+      label: "Sistema operativo"
     validations:
       required: true
   - type: input
     id: request-id
     attributes:
       label: "request_id"
-      description: "The `request_id` of the error response, when the API answered with an error."
+      description: "El `request_id` de la respuesta de error, cuando la API respondió con un error."
   - type: textarea
     id: output
     attributes:
-      label: Output or logs
-      description: "Paste the error or the response body. Remove secrets first."
+      label: Salida o registros
+      description: "Pega el error o el cuerpo de la respuesta. Quita antes los secretos."
   - type: checkboxes
     id: confirmation
     attributes:
-      label: Before you submit
+      label: Antes de enviar
       options:
-        - label: I searched the open issues.
+        - label: Busqué entre los issues abiertos.
           required: true
-        - label: I removed API keys and personal data from this report.
+        - label: Quité las claves de API y los datos personales de este reporte.
           required: true

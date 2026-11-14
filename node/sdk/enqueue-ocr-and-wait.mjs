@@ -1,9 +1,9 @@
-// Enqueue a validation from a receipt and wait for the verdict with the Node SDK.
+// Pone en cola la validación de un comprobante y espera el veredicto con el SDK de Node.
 //
 //   cd node/sdk && npm install
-//   VERIKO_API_KEY=veriko_... node enqueue-ocr-and-wait.mjs path/to/receipt.png
+//   VERIKO_API_KEY=veriko_... node enqueue-ocr-and-wait.mjs ruta/al/comprobante.png
 //
-// `enqueueOcr` sends `POST /validate-ocr?async=1`. Every accepted validation consumes quota.
+// `enqueueOcr` envía `POST /validate-ocr?async=1`. Cada validación aceptada consume cuota.
 //
 // veriko:operation POST /validate-ocr?async=1 query=async
 // veriko:operation GET /validations/{id}
@@ -12,7 +12,7 @@ import { Veriko } from '@veriko-mx/sdk';
 
 const receipt = process.argv[2];
 if (!receipt) {
-  console.error('Usage: node enqueue-ocr-and-wait.mjs <receipt file>');
+  console.error('Uso: node enqueue-ocr-and-wait.mjs <archivo del comprobante>');
   process.exit(2);
 }
 

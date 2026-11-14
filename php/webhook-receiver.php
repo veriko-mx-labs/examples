@@ -1,16 +1,16 @@
 <?php
-// Receive Veriko webhooks: verify the timestamped signature, reject stale deliveries, deduplicate.
+// Recibe los webhooks de Veriko: verifica la firma con marca de tiempo, rechaza las entregas vencidas y descarta las repetidas.
 //
-//   VERIKO_WEBHOOK_SECRET=<secret from POST /webhooks> php -S 0.0.0.0:3000 php/webhook-receiver.php
+//   VERIKO_WEBHOOK_SECRET=<secreto de POST /webhooks> php -S 0.0.0.0:3000 php/webhook-receiver.php
 //
-// Optional: VERIKO_WEBHOOK_SECRET_PREVIOUS keeps the receiver working for the 24 hours after you
-// rotate the secret, because the API then also sends `X-Webhook-Signature-Old`, signed with the
-// previous secret.
+// Opcional: VERIKO_WEBHOOK_SECRET_PREVIOUS mantiene el receptor funcionando durante las 24 horas
+// posteriores a rotar el secreto, porque la API envía entonces también `X-Webhook-Signature-Old`,
+// firmada con el secreto anterior.
 //
-// The signature covers the body exactly as received, so the receiver reads the raw bytes and
-// parses the JSON only after the check. `t` must be within 5 minutes of this machine's clock:
-// the window applies to `t`, the time of that attempt, not to the `timestamp` in the body,
-// because a retry arrives up to about 8.6 hours after the event with a new `t`.
+// La firma cubre el cuerpo tal como llegó, así que el receptor lee los bytes sin procesar y
+// analiza el JSON hasta después de la verificación. `t` debe estar a menos de 5 minutos del reloj
+// de esta máquina: la ventana aplica a `t`, la hora de ese intento, y no al `timestamp` del
+// cuerpo, porque un reintento llega hasta unas 8.6 horas después del evento con un `t` nuevo.
 //
 // veriko:receiver
 
@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 const TOLERANCE_SECONDS = 300;
 
-/** `$header` is `t=<seconds>,v1=<hex>`. True when `v1` matches HMAC-SHA256 of `<t>.<body>` and `t` is in the window. */
+/** `$header` es `t=<segundos>,v1=<hex>`. Devuelve true cuando `v1` coincide con el HMAC-SHA256 de `<t>.<cuerpo>` y `t` está en la ventana. */
 function verify_timestamped(string $rawBody, ?string $header, string $secret): bool
 {
     if ($header === null || $header === '') {
@@ -41,7 +41,7 @@ $secret = getenv('VERIKO_WEBHOOK_SECRET');
 $previousSecret = getenv('VERIKO_WEBHOOK_SECRET_PREVIOUS') ?: null;
 if ($secret === false || $secret === '') {
     http_response_code(500);
-    error_log('Set VERIKO_WEBHOOK_SECRET to the secret returned when you registered the endpoint.');
+    error_log('Define VERIKO_WEBHOOK_SECRET con el secreto que recibiste al registrar el endpoint.');
     exit;
 }
 
@@ -52,15 +52,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $rawBody = (string) file_get_contents('php://input');
 $authentic = verify_timestamped($rawBody, $_SERVER['HTTP_X_WEBHOOK_SIGNATURE_TIMESTAMPED'] ?? null, $secret)
-    // During a rotation, a delivery queued before the change carries the old signature.
+    // Durante una rotación, una entrega que quedó en cola antes del cambio lleva la firma anterior.
     || ($previousSecret !== null && verify_timestamped($rawBody, $_SERVER['HTTP_X_WEBHOOK_SIGNATURE_OLD'] ?? null, $previousSecret));
 if (!$authentic) {
-    http_response_code(401); // a 4xx other than 408 and 429 is not retried
+    http_response_code(401); // un 4xx distinto de 408 y 429 no se reintenta
     exit;
 }
 
-// Deduplicate by delivery id: a retry repeats the same delivery. Use a shared store with a
-// 24-hour expiry in production; this sketch keeps ids in a temporary directory.
+// Descarta las repetidas por id de entrega: un reintento repite la misma entrega. En producción
+// usa un almacén compartido con vencimiento de 24 horas; este ejemplo guarda los ids en un
+// directorio temporal.
 $deliveryId = $_SERVER['HTTP_X_VERIKO_DELIVERY_ID'] ?? null;
 if ($deliveryId !== null) {
     $marker = sys_get_temp_dir() . '/veriko-delivery-' . hash('sha256', $deliveryId);
@@ -75,4 +76,4 @@ http_response_code(200);
 $event = json_decode($rawBody, true, 512, JSON_THROW_ON_ERROR);
 $attributes = $event['data']['attributes'];
 error_log("{$event['event']} {$event['data']['id']} status={$attributes['status']} client_ref=" . ($attributes['client_ref'] ?? '-'));
-// Before releasing goods on `valid`, compare `$attributes['banxico_confirmed']` (amount, account) with your order.
+// Antes de entregar la mercancía con `valid`, compara `$attributes['banxico_confirmed']` (monto, cuenta) con tu pedido.

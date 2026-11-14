@@ -1,9 +1,9 @@
-// Download the CEP of a validation as a PDF or an XML file.
+// Descarga el CEP de una validación como archivo PDF o XML.
 //
-//   VERIKO_API_KEY=veriko_... node node/raw/download-cep.mjs <validation id> [pdf|xml]
+//   VERIKO_API_KEY=veriko_... node node/raw/download-cep.mjs <id de la validación> [pdf|xml]
 //
-// The CEP exists only when the validation is `valid` or `returned`. Otherwise the API answers 404
-// `cep_not_available`. A validation that was purged answers 410 and an unknown format, 400
+// El CEP existe sólo cuando la validación es `valid` o `returned`. En otro caso la API responde 404
+// `cep_not_available`. Una validación purgada responde 410 y un formato desconocido, 400
 // `invalid_export_format`.
 //
 // veriko:operation GET /validations/{id}/cep query=format
@@ -15,7 +15,7 @@ import { ApiError, api, run } from './client.mjs';
 run(async () => {
   const [id, format = 'pdf'] = process.argv.slice(2);
   if (!id) {
-    console.error('Usage: node download-cep.mjs <validation id> [pdf|xml]');
+    console.error('Uso: node download-cep.mjs <id de la validación> [pdf|xml]');
     process.exit(2);
   }
 
@@ -23,10 +23,10 @@ run(async () => {
     const response = await api('GET', `/validations/${id}/cep`, { query: { format }, binary: true });
     const file = `cep-${id}.${format}`;
     await writeFile(file, response.body);
-    console.log(`Saved ${file} (${response.headers.get('content-type')}, ${response.body.length} bytes)`);
+    console.log(`Guardado ${file} (${response.headers.get('content-type')}, ${response.body.length} bytes)`);
   } catch (error) {
     if (error instanceof ApiError && error.code === 'cep_not_available') {
-      console.error('Banxico has no CEP for this validation (yet).');
+      console.error('Banxico todavía no tiene CEP para esta validación.');
       process.exit(1);
     }
     throw error;

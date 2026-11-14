@@ -1,11 +1,11 @@
-// Register a webhook endpoint, send a test delivery and show its delivery history.
+// Registra un endpoint de webhook, envía una entrega de prueba y muestra su historial de entregas.
 //
 //   VERIKO_API_KEY=veriko_... node node/raw/webhook-register.mjs https://example.com/hooks/veriko
 //
-// The URL must be a public HTTPS address that answers 2xx: run `webhook-receiver.mjs` behind a
-// tunnel while you try it. The response carries the signing `secret` once; store it
-// as VERIKO_WEBHOOK_SECRET for the receiver. The endpoint subscribes to all seven validation
-// events, so `validation.returned` reports a later return.
+// La URL debe ser una dirección HTTPS pública que responda 2xx: mientras pruebas, corre
+// `webhook-receiver.mjs` detrás de un túnel. La respuesta trae el `secret` de firma una sola vez;
+// guárdalo como VERIKO_WEBHOOK_SECRET para el receptor. El endpoint se suscribe a los siete
+// eventos de validación, así que `validation.returned` avisa de una devolución posterior.
 //
 // veriko:operation POST /webhooks body=url,events,description
 // veriko:operation POST /webhooks/{id}/test
@@ -17,14 +17,14 @@ import { api, run } from './client.mjs';
 run(async () => {
   const url = process.argv[2];
   if (!url) {
-    console.error('Usage: node webhook-register.mjs <public https URL>');
+    console.error('Uso: node webhook-register.mjs <URL https pública>');
     process.exit(2);
   }
 
   const created = await api('POST', '/webhooks', {
     body: {
       url,
-      description: 'Example endpoint',
+      description: 'Endpoint de ejemplo',
       events: [
         'validation.completed',
         'validation.failed',
@@ -38,18 +38,18 @@ run(async () => {
   });
   const { id, attributes } = created.body.data;
   console.log(`Endpoint ${id}`);
-  console.log(`Secret (shown once): ${attributes.secret}`);
+  console.log(`Secreto (se muestra una vez): ${attributes.secret}`);
 
-  // The test returns 200 even when delivery failed: check `delivered`.
+  // La prueba responde 200 aunque la entrega falle: revisa `delivered`.
   const test = await api('POST', `/webhooks/${id}/test`);
   const result = test.body.data.attributes;
-  console.log(`Test delivered=${result.delivered} http_status=${result.http_status} ${result.error ?? ''}`);
+  console.log(`Prueba delivered=${result.delivered} http_status=${result.http_status} ${result.error ?? ''}`);
 
   const deliveries = await api('GET', `/webhooks/${id}/deliveries`, { query: { per_page: 5 } });
   for (const delivery of deliveries.body.data) console.log(`${delivery.id} ${delivery.attributes.status}`);
 
   if (process.argv[3] === '--delete') {
     await api('DELETE', `/webhooks/${id}`);
-    console.log(`Deleted ${id}`);
+    console.log(`Eliminado ${id}`);
   }
 });

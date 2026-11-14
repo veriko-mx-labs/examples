@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Download the CEP of a validation as a PDF or an XML file.
+# Descarga el CEP de una validación como archivo PDF o XML.
 #
-#   VERIKO_API_KEY=veriko_... bash curl/download-cep.sh <validation id> [pdf|xml]
+#   VERIKO_API_KEY=veriko_... bash curl/download-cep.sh <id de la validación> [pdf|xml]
 #
-# The CEP exists only when the validation is `valid` or `returned`. Otherwise the API answers 404
-# `cep_not_available`. A validation that was purged answers 410 and an unknown format, 400
+# El CEP existe sólo cuando la validación es `valid` o `returned`. En otro caso la API responde 404
+# `cep_not_available`. Una validación purgada responde 410 y un formato desconocido, 400
 # `invalid_export_format`.
 #
 # veriko:operation GET /validations/{id}/cep query=format
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-id="${1:?Usage: download-cep.sh <validation id> [pdf|xml]}"
+id="${1:?Uso: download-cep.sh <id de la validación> [pdf|xml]}"
 format="${2:-pdf}"
 
 api GET "/validations/${id}/cep?format=${format}"
 cp "$BODY_FILE" "cep-${id}.${format}"
-echo "Saved cep-${id}.${format} ($(header content-type))"
+echo "Guardado cep-${id}.${format} ($(header content-type))"

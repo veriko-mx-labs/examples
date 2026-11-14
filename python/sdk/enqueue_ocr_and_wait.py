@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Enqueue a validation from a receipt and wait for the verdict with the Python SDK.
+"""Pone en cola la validación de un comprobante y espera el veredicto con el SDK de Python.
 
     pip install -r python/sdk/requirements.txt
-    VERIKO_API_KEY=veriko_... python3 python/sdk/enqueue_ocr_and_wait.py path/to/receipt.png
+    VERIKO_API_KEY=veriko_... python3 python/sdk/enqueue_ocr_and_wait.py ruta/al/comprobante.png
 
-`enqueue_ocr` sends `POST /validate-ocr?async=1`. Every accepted validation consumes quota.
+`enqueue_ocr` envía `POST /validate-ocr?async=1`. Cada validación aceptada consume cuota.
 """
 # veriko:operation POST /validate-ocr?async=1 query=async
 # veriko:operation GET /validations/{id}
@@ -13,7 +13,7 @@ import sys
 from veriko import Veriko
 
 if len(sys.argv) < 2:
-    sys.exit("Usage: enqueue_ocr_and_wait.py <receipt file>")
+    sys.exit("Uso: enqueue_ocr_and_wait.py <archivo del comprobante>")
 
 client = Veriko()
 

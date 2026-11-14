@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Handle API errors: check the HTTP status first, branch on `errors[].code`, show `detail` and `hint`.
+# Maneja los errores de la API: revisa primero el estado HTTP, decide con `errors[].code` y muestra `detail` y `hint`.
 #
 #   VERIKO_API_KEY=veriko_... bash curl/error-handling.sh
 #
-# This script sends an invalid request on purpose (a `422`). The API rejects it before it
-# reaches Banxico, so it consumes no quota.
-# Branch on `code`: it is stable and never translated. `detail` changes with the
-# `Accept-Language` header and may be reworded, so show it but do not compare it.
+# Este script envía a propósito una petición inválida (un `422`). La API la rechaza antes de
+# llegar a Banxico, así que no consume cuota.
+# Decide con `code`: es estable y nunca se traduce. `detail` cambia con la cabecera
+# `Accept-Language` y puede reformularse, así que muéstralo pero no lo compares.
 #
 # veriko:operation POST /validate body=amount,beneficiary_account
 set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-# Neither `tracking_key` nor `numeric_reference`: the API cannot look the payment up.
-# `api` already prints every entry of `errors[]` with its pointer and hint.
+# No trae `tracking_key` ni `numeric_reference`: la API no puede buscar el pago.
+# `api` ya imprime cada entrada de `errors[]` con su puntero y su sugerencia.
 if TIMEOUT=$SYNC_TIMEOUT api POST /validate \
   --header "Content-Type: application/json" \
   --data '{"amount": 100, "beneficiary_account": "012180004412345678"}'; then
@@ -21,9 +21,9 @@ if TIMEOUT=$SYNC_TIMEOUT api POST /validate \
 fi
 
 case "$ERROR_CODE" in
-  quota_exceeded) echo "The plan quota is spent. Do not retry; upgrade the plan or wait for the renewal." ;;
-  rate_limit_exceeded) echo "Rate limited. Retry after $(header retry-after) s." ;;
-  network_error) echo "No response: check the connection and the timeout." ;;
-  *) echo "Failed with HTTP ${STATUS} (${ERROR_CODE})." ;;
+  quota_exceeded) echo "Se agotó la cuota del plan. No reintentes; cambia de plan o espera a la renovación." ;;
+  rate_limit_exceeded) echo "Límite de tasa alcanzado. Reintenta en $(header retry-after) s." ;;
+  network_error) echo "Sin respuesta: revisa la conexión y el tiempo límite." ;;
+  *) echo "Falló con HTTP ${STATUS} (${ERROR_CODE})." ;;
 esac
 exit 1

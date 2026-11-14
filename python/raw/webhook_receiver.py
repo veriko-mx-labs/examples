@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Receive Veriko webhooks: verify the timestamped signature, reject stale deliveries, deduplicate.
+"""Recibe los webhooks de Veriko: verifica la firma con marca de tiempo, rechaza las entregas vencidas y descarta las repetidas.
 
-    VERIKO_WEBHOOK_SECRET=<secret from POST /webhooks> python3 python/raw/webhook_receiver.py
+    VERIKO_WEBHOOK_SECRET=<secreto de POST /webhooks> python3 python/raw/webhook_receiver.py
 
-Optional: VERIKO_WEBHOOK_SECRET_PREVIOUS keeps the receiver working for the 24 hours after you
-rotate the secret, because the API then also sends `X-Webhook-Signature-Old`, signed with the
-previous secret. PORT defaults to 3000.
+Opcional: VERIKO_WEBHOOK_SECRET_PREVIOUS mantiene el receptor funcionando durante las 24 horas
+posteriores a rotar el secreto, porque la API envía entonces también `X-Webhook-Signature-Old`,
+firmada con el secreto anterior. PORT es 3000 por defecto.
 
-The signature covers the body exactly as received, so the receiver reads the raw bytes and
-parses the JSON only after the check. `t` must be within 5 minutes of this machine's clock:
-the window applies to `t`, the time of that attempt, not to the `timestamp` in the body,
-because a retry arrives up to about 8.6 hours after the event with a new `t`.
+La firma cubre el cuerpo tal como llegó, así que el receptor lee los bytes sin procesar y
+analiza el JSON hasta después de la verificación. `t` debe estar a menos de 5 minutos del reloj
+de esta máquina: la ventana aplica a `t`, la hora de ese intento, y no al `timestamp` del
+cuerpo, porque un reintento llega hasta unas 8.6 horas después del evento con un `t` nuevo.
 """
 # veriko:receiver
 import hashlib
@@ -25,15 +25,15 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 SECRET = os.environ.get("VERIKO_WEBHOOK_SECRET")
 PREVIOUS_SECRET = os.environ.get("VERIKO_WEBHOOK_SECRET_PREVIOUS")
 TOLERANCE_SECONDS = 300
-seen = set()  # use a shared store with a 24-hour expiry in production
+seen = set()  # en producción usa un almacén compartido con vencimiento de 24 horas
 
 if not SECRET:
-    sys.exit("Set VERIKO_WEBHOOK_SECRET to the secret returned when you registered the endpoint.")
+    sys.exit("Define VERIKO_WEBHOOK_SECRET con el secreto que recibiste al registrar el endpoint.")
 
 
 def verify_timestamped(raw_body: bytes, header: str, secret: str) -> bool:
-    """`header` is `t=<seconds>,v1=<hex>`. True when `v1` matches HMAC-SHA256 of `<t>.<body>`
-    and `t` is inside the tolerance window."""
+    """`header` es `t=<segundos>,v1=<hex>`. Devuelve True cuando `v1` coincide con el HMAC-SHA256 de `<t>.<cuerpo>`
+    y `t` está dentro de la ventana de tolerancia."""
     if not header:
         return False
     fields = dict(part.strip().split("=", 1) for part in header.split(",") if "=" in part)
@@ -49,7 +49,7 @@ def verify_timestamped(raw_body: bytes, header: str, secret: str) -> bool:
 def is_authentic(raw_body: bytes, headers) -> bool:
     if verify_timestamped(raw_body, headers.get("X-Webhook-Signature-Timestamped", ""), SECRET):
         return True
-    # During a rotation, a delivery queued before the change carries the old signature.
+    # Durante una rotación, una entrega que quedó en cola antes del cambio lleva la firma anterior.
     return PREVIOUS_SECRET is not None and verify_timestamped(
         raw_body, headers.get("X-Webhook-Signature-Old", ""), PREVIOUS_SECRET)
 
@@ -58,17 +58,17 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         raw_body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
         if not is_authentic(raw_body, self.headers):
-            self.send_response(401)  # a 4xx other than 408 and 429 is not retried
+            self.send_response(401)  # un 4xx distinto de 408 y 429 no se reintenta
             self.end_headers()
             return
 
-        # Answer 2xx first, process afterwards: the sender waits 10 seconds at most.
+        # Responde 2xx primero y procesa después: quien envía espera 10 segundos como máximo.
         self.send_response(200)
         self.end_headers()
 
         delivery_id = self.headers.get("X-Veriko-Delivery-Id")
         if delivery_id and delivery_id in seen:
-            return  # a retry of a delivery already handled
+            return  # es un reintento de una entrega que ya se atendió
         if delivery_id:
             seen.add(delivery_id)
 
@@ -76,10 +76,10 @@ class Handler(BaseHTTPRequestHandler):
         attributes = event["data"]["attributes"]
         print(event["event"], event["data"]["id"], f"status={attributes['status']}",
               f"client_ref={attributes.get('client_ref', '-')}", flush=True)
-        # Before releasing goods on `valid`, compare `attributes["banxico_confirmed"]` (amount,
-        # account) with your order.
+        # Antes de entregar la mercancía con `valid`, compara `attributes["banxico_confirmed"]` (monto,
+        # cuenta) con tu pedido.
 
 
 if __name__ == "__main__":
-    print("Listening for webhooks", flush=True)
+    print("Escuchando webhooks", flush=True)
     HTTPServer(("", int(os.environ.get("PORT", 3000))), Handler).serve_forever()

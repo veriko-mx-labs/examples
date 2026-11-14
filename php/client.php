@@ -1,15 +1,16 @@
 <?php
-// Shared helper for the PHP examples: PHP 8.1 or later with the curl extension, no packages.
-// It reads the key from VERIKO_API_KEY, sends every request with a timeout, checks the HTTP
-// status before parsing the body, and turns any error response into an `ApiError`.
+// Funciones compartidas de los ejemplos de PHP: PHP 8.1 o posterior con la extensión curl, sin paquetes.
+// Lee la clave de VERIKO_API_KEY, envía cada petición con un tiempo límite, revisa el estado
+// HTTP antes de analizar el cuerpo y convierte cualquier respuesta de error en un `ApiError`.
 // veriko:operation GET /validations/{id} headers=If-None-Match
 
 declare(strict_types=1);
 
+// Estados en los que la validación es final: deja de sondear cuando `data.attributes.status` es uno de ellos.
 const TERMINAL_STATUSES = ['valid', 'not_found', 'cep_unavailable', 'invalid', 'returned', 'failed', 'error'];
-// Statuses worth retrying: the failure belongs to the moment, not to the request.
+// Estados que vale la pena reintentar: la falla es del momento, no de la petición.
 const RETRYABLE_STATUSES = [408, 429, 500, 502, 503, 504];
-// The synchronous validation can hold the connection for up to about a minute.
+// La validación síncrona puede mantener la conexión abierta hasta cerca de un minuto.
 const SYNC_TIMEOUT = 75;
 const DEFAULT_TIMEOUT = 30;
 
@@ -31,7 +32,7 @@ final class ApiError extends RuntimeException
     ) {
         $first = $errors[0] ?? [];
         $this->errorCode = (string) ($first['code'] ?? "http_{$status}");
-        parent::__construct("HTTP {$status} {$this->errorCode}: " . ($first['detail'] ?? 'no detail'));
+        parent::__construct("HTTP {$status} {$this->errorCode}: " . ($first['detail'] ?? 'sin detalle'));
     }
 }
 
@@ -39,15 +40,15 @@ function api_key(): string
 {
     $key = getenv('VERIKO_API_KEY');
     if ($key === false || $key === '') {
-        fwrite(STDERR, "Set VERIKO_API_KEY to your API key (it starts with veriko_).\n");
+        fwrite(STDERR, "Define VERIKO_API_KEY con tu clave de API (empieza con veriko_).\n");
         exit(1);
     }
     return $key;
 }
 
 /**
- * Sends one request. Returns ['status' => int, 'headers' => array, 'body' => mixed] for any 2xx or 304
- * (`body` is the decoded JSON, or the raw string when `binary` is true). Throws ApiError otherwise.
+ * Envía una petición. Devuelve ['status' => int, 'headers' => array, 'body' => mixed] con cualquier 2xx o 304
+ * (`body` es el JSON decodificado, o la cadena sin procesar cuando `binary` es true). En otro caso lanza ApiError.
  *
  * @param array{query?: array<string, scalar>, body?: mixed, headers?: array<string, string>, timeout?: int, binary?: bool} $options
  */
@@ -94,7 +95,7 @@ function api(string $method, string $path, array $options = []): array
         return ['status' => 304, 'headers' => $responseHeaders, 'body' => null];
     }
     if ($status >= 400) {
-        // An error is not always JSON: a gateway can answer 502 with HTML.
+        // Un error no siempre es JSON: un gateway puede responder 502 con HTML.
         $errors = [['status' => (string) $status, 'code' => "http_{$status}", 'detail' => substr((string) $raw, 0, 200)]];
         $requestId = null;
         $parsed = json_decode((string) $raw, true);
@@ -112,9 +113,9 @@ function api(string $method, string $path, array $options = []): array
 }
 
 /**
- * Retries `$send` on retryable failures, waiting for Retry-After when the API sends it and backing
- * off exponentially otherwise. Only pass a `$send` that is safe to repeat: a GET, a PUT, or a POST
- * that carries an Idempotency-Key.
+ * Reintenta `$send` cuando la falla se puede reintentar: espera Retry-After si la API lo envía y, si no,
+ * espera cada vez más (retroceso exponencial). Pasa sólo un `$send` que se pueda repetir sin riesgo: un
+ * GET, un PUT o un POST que lleve Idempotency-Key.
  */
 function with_retry(callable $send, int $attempts = 5, float $baseDelay = 1.0): array
 {
@@ -122,7 +123,7 @@ function with_retry(callable $send, int $attempts = 5, float $baseDelay = 1.0): 
         try {
             return $send();
         } catch (ApiError $error) {
-            // A spent quota stays spent until the plan renews: retrying cannot help.
+            // Una cuota agotada sigue agotada hasta que el plan se renueva: reintentar no ayuda.
             $retryable = $error->errorCode !== 'quota_exceeded'
                 && ($error->transport
                     || in_array($error->status, RETRYABLE_STATUSES, true)
@@ -131,22 +132,22 @@ function with_retry(callable $send, int $attempts = 5, float $baseDelay = 1.0): 
                 throw $error;
             }
             $wait = $error->retryAfter ?? $baseDelay * 2 ** ($attempt - 1) * (0.5 + mt_rand() / mt_getrandmax() / 2);
-            fwrite(STDERR, "Attempt {$attempt} failed ({$error->errorCode}); retrying in " . round($wait) . " s.\n");
+            fwrite(STDERR, "El intento {$attempt} falló ({$error->errorCode}); reintento en " . round($wait) . " s.\n");
             usleep((int) ($wait * 1_000_000));
         }
     }
 }
 
 /**
- * Polls GET /validations/{id} until the status is terminal. Honors Retry-After and
- * meta.next_poll_after_seconds, sends the ETag back as If-None-Match, and stops at `$expiresAt`.
+ * Sondea GET /validations/{id} hasta que el estado sea final. Respeta Retry-After y
+ * meta.next_poll_after_seconds, devuelve el ETag en If-None-Match y se detiene en `$expiresAt`.
  */
 function poll_validation(string $id, ?string $expiresAt = null): array
 {
     $etag = null;
     $deadline = $expiresAt !== null ? strtotime($expiresAt) : null;
     for (;;) {
-        $wait = 2.0; // seconds until the next poll; 304 means nothing changed
+        $wait = 2.0; // segundos hasta el siguiente sondeo; 304 significa que nada cambió
         $response = with_retry(fn () => api('GET', "/validations/{$id}", [
             'headers' => $etag !== null ? ['If-None-Match' => $etag] : [],
         ]));
@@ -156,26 +157,26 @@ function poll_validation(string $id, ?string $expiresAt = null): array
             if (in_array($status, TERMINAL_STATUSES, true)) {
                 return $response['body'];
             }
-            fwrite(STDERR, "Status: {$status}\n");
+            fwrite(STDERR, "Estado: {$status}\n");
             $wait = (float) ($response['headers']['retry-after'] ?? $response['body']['meta']['next_poll_after_seconds'] ?? 2);
         }
         if ($deadline !== null && time() + $wait > $deadline) {
-            throw new RuntimeException("The validation {$id} did not reach a final status before {$expiresAt}.");
+            throw new RuntimeException("La validación {$id} no llegó a un estado final antes de {$expiresAt}.");
         }
         usleep((int) ($wait * 1_000_000));
     }
 }
 
-/** Prints an error the way an operator needs it, then exits non-zero. */
+/** Imprime un error como lo necesita quien opera el programa y termina con un código distinto de cero. */
 function fail(Throwable $error): never
 {
     if ($error instanceof ApiError) {
-        fwrite(STDERR, "HTTP {$error->status} {$error->errorCode}" . ($error->requestId ? " (request {$error->requestId})" : '') . "\n");
+        fwrite(STDERR, "HTTP {$error->status} {$error->errorCode}" . ($error->requestId ? " (petición {$error->requestId})" : '') . "\n");
         foreach ($error->errors as $entry) {
             $pointer = $entry['source']['pointer'] ?? null;
             fwrite(STDERR, '  ' . ($entry['detail'] ?? '') . ($pointer ? " [{$pointer}]" : '') . "\n");
             if (!empty($entry['hint'])) {
-                fwrite(STDERR, "  hint: {$entry['hint']}\n");
+                fwrite(STDERR, "  sugerencia: {$entry['hint']}\n");
             }
         }
     } else {
@@ -184,7 +185,7 @@ function fail(Throwable $error): never
     exit(1);
 }
 
-/** Runs `$main` and exits non-zero on any failure. */
+/** Corre `$main` y termina con un código distinto de cero ante cualquier falla. */
 function run(callable $main): void
 {
     try {

@@ -1,11 +1,11 @@
-## Change
+## Cambio
 
-Describe what changes for the people who use this repository.
+Describe qué cambia para quienes usan este repositorio.
 
-## Checklist
+## Lista de revisión
 
-- [ ] The checks pass: `npm ci`, `npm run lint`, `npm test`.
-- [ ] A new example has its `veriko:operation` line and its README row.
-- [ ] README.md is updated when the behavior changes.
-- [ ] `spec/openapi.yaml` is not edited by hand.
-- [ ] The change contains no API keys and no personal data.
+- [ ] Las comprobaciones pasan: `npm ci`, `npm run lint`, `npm test`.
+- [ ] Un ejemplo nuevo trae su línea `veriko:operation` y su fila en el README.
+- [ ] README.md está al día cuando cambia el comportamiento.
+- [ ] `spec/openapi.yaml` no se editó a mano.
+- [ ] El cambio no contiene claves de API ni datos personales.

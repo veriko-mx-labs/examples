@@ -1,10 +1,10 @@
 <?php
-// Download the CEP of a validation as a PDF or an XML file.
+// Descarga el CEP de una validación como archivo PDF o XML.
 //
-//   VERIKO_API_KEY=veriko_... php php/download-cep.php <validation id> [pdf|xml]
+//   VERIKO_API_KEY=veriko_... php php/download-cep.php <id de la validación> [pdf|xml]
 //
-// The CEP exists only when the validation is `valid` or `returned`. Otherwise the API answers 404
-// `cep_not_available`. A validation that was purged answers 410 and an unknown format, 400
+// El CEP existe sólo cuando la validación es `valid` o `returned`. En otro caso la API responde 404
+// `cep_not_available`. Una validación purgada responde 410 y un formato desconocido, 400
 // `invalid_export_format`.
 //
 // veriko:operation GET /validations/{id}/cep query=format
@@ -17,7 +17,7 @@ run(function () use ($argv): void {
     $id = $argv[1] ?? null;
     $format = $argv[2] ?? 'pdf';
     if ($id === null) {
-        fwrite(STDERR, "Usage: php download-cep.php <validation id> [pdf|xml]\n");
+        fwrite(STDERR, "Uso: php download-cep.php <id de la validación> [pdf|xml]\n");
         exit(2);
     }
 
@@ -25,12 +25,12 @@ run(function () use ($argv): void {
         $response = api('GET', "/validations/{$id}/cep", ['query' => ['format' => $format], 'binary' => true]);
     } catch (ApiError $error) {
         if ($error->errorCode === 'cep_not_available') {
-            fwrite(STDERR, "Banxico has no CEP for this validation (yet).\n");
+            fwrite(STDERR, "Banxico todavía no tiene CEP para esta validación.\n");
             exit(1);
         }
         throw $error;
     }
     $file = "cep-{$id}.{$format}";
     file_put_contents($file, $response['body']);
-    echo "Saved {$file} ({$response['headers']['content-type']}, " . strlen($response['body']) . " bytes)\n";
+    echo "Guardado {$file} ({$response['headers']['content-type']}, " . strlen($response['body']) . " bytes)\n";
 });

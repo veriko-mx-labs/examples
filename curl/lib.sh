@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# Shared helper for the curl examples: source it, then call `api METHOD /path [curl options]`.
-# Requires bash, curl and jq. It reads the key from VERIKO_API_KEY, sends every request with a
-# timeout, checks the HTTP status before reading the body, and prints `errors[]` on any non-2xx.
+# Funciones compartidas de los ejemplos de cURL: cárgalo con `source` y llama a `api MÉTODO /ruta [opciones de curl]`.
+# Requiere bash, curl y jq. Lee la clave de VERIKO_API_KEY, envía cada petición con un tiempo
+# límite, revisa el estado HTTP antes de leer el cuerpo e imprime `errors[]` si el estado no es 2xx.
 # veriko:operation GET /validations/{id} headers=If-None-Match
 
 VERIKO_BASE_URL="${VERIKO_BASE_URL:-https://api.veriko.mx/v1}"
 VERIKO_BASE_URL="${VERIKO_BASE_URL%/}"
 
-# Statuses where the validation is final: stop polling when `data.attributes.status` is one of them.
+# Estados en los que la validación es final: deja de sondear cuando `data.attributes.status` es uno de ellos.
 TERMINAL_STATUSES="valid not_found cep_unavailable invalid returned failed error"
-# Statuses worth retrying: the failure belongs to the moment, not to the request.
+# Estados que vale la pena reintentar: la falla es del momento, no de la petición.
 RETRYABLE_STATUSES="408 429 500 502 503 504"
 
-# The synchronous validation can hold the connection for up to about a minute.
+# La validación síncrona puede mantener la conexión abierta hasta cerca de un minuto.
 SYNC_TIMEOUT=75
 DEFAULT_TIMEOUT=30
 
 if [[ -z "${VERIKO_API_KEY:-}" ]]; then
-  echo "Set VERIKO_API_KEY to your API key (it starts with veriko_)." >&2
+  echo "Define VERIKO_API_KEY con tu clave de API (empieza con veriko_)." >&2
   exit 1
 fi
 
@@ -25,14 +25,14 @@ WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 BODY_FILE="$WORK_DIR/body"
 HEADERS_FILE="$WORK_DIR/headers"
-# Set by `api`: the HTTP status, and the `errors[0].code` of a failed request.
+# Los define `api`: el estado HTTP y el `errors[0].code` de una petición fallida.
 STATUS=""
 ERROR_CODE=""
 
-# api METHOD PATH [curl options...]
-# Writes the response body to $BODY_FILE and the headers to $HEADERS_FILE. Returns 0 for a 2xx or
-# 304, 1 for an API error (printed to stderr), 2 for a transport failure.
-# Set TIMEOUT to override the default 30 seconds.
+# api MÉTODO RUTA [opciones de curl...]
+# Escribe el cuerpo de la respuesta en $BODY_FILE y las cabeceras en $HEADERS_FILE. Devuelve 0 con un
+# 2xx o un 304, 1 con un error de la API (se imprime en stderr) y 2 con una falla de transporte.
+# Define TIMEOUT para cambiar los 30 segundos predeterminados.
 api() {
   local method="$1" path="$2"
   shift 2
@@ -47,11 +47,11 @@ api() {
   if [[ "$STATUS" == 2* || "$STATUS" == "304" ]]; then
     return 0
   fi
-  # An error is not always JSON: a gateway can answer 502 with HTML.
+  # Un error no siempre es JSON: un gateway puede responder 502 con HTML.
   if jq -e '.errors[0]' "$BODY_FILE" >/dev/null 2>&1; then
     ERROR_CODE="$(jq -r '.errors[0].code' "$BODY_FILE")"
-    echo "HTTP ${STATUS} ${ERROR_CODE} (request $(jq -r '.meta.request_id // "unknown"' "$BODY_FILE"))" >&2
-    jq -r '.errors[] | "  \(.detail)\(if .source.pointer then " [" + .source.pointer + "]" else "" end)\(if .hint then "\n  hint: " + .hint else "" end)"' "$BODY_FILE" >&2
+    echo "HTTP ${STATUS} ${ERROR_CODE} (petición $(jq -r '.meta.request_id // "desconocida"' "$BODY_FILE"))" >&2
+    jq -r '.errors[] | "  \(.detail)\(if .source.pointer then " [" + .source.pointer + "]" else "" end)\(if .hint then "\n  sugerencia: " + .hint else "" end)"' "$BODY_FILE" >&2
   else
     ERROR_CODE="http_${STATUS}"
     echo "HTTP ${STATUS}: $(head -c 200 "$BODY_FILE")" >&2
@@ -59,15 +59,16 @@ api() {
   return 1
 }
 
-# header NAME: the value of a response header from the last `api` call.
+# header NOMBRE: el valor de una cabecera de la respuesta de la última llamada a `api`.
 header() {
   { grep -i "^$1:" "$HEADERS_FILE" || true; } | tail -n 1 | cut -d: -f2- | tr -d '\r' | sed 's/^ *//'
 }
 
-# api_retry METHOD PATH [curl options...]
-# Like `api`, repeated on retryable failures. Waits `Retry-After` when the API sends it and backs
-# off exponentially otherwise. Never retries `quota_exceeded`: that 429 lasts until the plan renews.
-# Use it only for requests that are safe to repeat: a GET, a PUT, or a POST with an Idempotency-Key.
+# api_retry MÉTODO RUTA [opciones de curl...]
+# Como `api`, pero se repite cuando la falla se puede reintentar. Espera `Retry-After` si la API lo
+# envía y, si no, espera cada vez más (retroceso exponencial). Nunca reintenta `quota_exceeded`: ese
+# 429 dura hasta que el plan se renueva.
+# Úsala sólo con peticiones que se pueden repetir sin riesgo: un GET, un PUT o un POST con Idempotency-Key.
 api_retry() {
   local attempt=1 max_attempts=5 result delay
   while true; do
@@ -79,16 +80,16 @@ api_retry() {
     fi
     delay="$(header retry-after)"
     delay="${delay:-$((2 ** (attempt - 1)))}"
-    echo "Attempt ${attempt} failed (${ERROR_CODE}); retrying in ${delay} s." >&2
+    echo "El intento ${attempt} falló (${ERROR_CODE}); reintento en ${delay} s." >&2
     sleep "$delay"
     attempt=$((attempt + 1))
   done
 }
 
 # poll_validation ID [EXPIRES_AT]
-# Polls the validation until its status is terminal and leaves the final body in $BODY_FILE.
-# Honors Retry-After and meta.next_poll_after_seconds, sends the ETag back as If-None-Match, and
-# stops at EXPIRES_AT (ISO 8601).
+# Sondea la validación hasta que su estado sea final y deja el cuerpo final en $BODY_FILE.
+# Respeta Retry-After y meta.next_poll_after_seconds, devuelve el ETag en If-None-Match y se
+# detiene en EXPIRES_AT (ISO 8601).
 poll_validation() {
   local id="$1" expires_at="${2:-}" etag="" status delay deadline=""
   [[ -n "$expires_at" ]] && deadline="$(date -d "$expires_at" +%s 2>/dev/null || true)"
@@ -103,20 +104,20 @@ poll_validation() {
       etag="$(header etag)"
       status="$(jq -r '.data.attributes.status' "$BODY_FILE")"
       if [[ " $TERMINAL_STATUSES " == *" $status "* ]]; then return 0; fi
-      echo "Status: ${status}" >&2
+      echo "Estado: ${status}" >&2
       delay="$(header retry-after)"
       delay="${delay:-$(jq -r '.meta.next_poll_after_seconds // 2' "$BODY_FILE")}"
     fi
     if [[ -n "$deadline" && $(($(date +%s) + delay)) -gt $deadline ]]; then
-      echo "The validation ${id} did not reach a final status before ${expires_at}." >&2
+      echo "La validación ${id} no llegó a un estado final antes de ${expires_at}." >&2
       return 1
     fi
     sleep "$delay"
   done
 }
 
-# receipt_body SOURCE: prints a JSON body for the receipt validation.
-# SOURCE is a local file (sent as base64 in `image`) or an https URL (sent as `image_url`).
+# receipt_body ORIGEN: imprime el cuerpo JSON de la validación de un comprobante.
+# ORIGEN es un archivo local (se envía en base64 en `image`) o una URL https (se envía como `image_url`).
 receipt_body() {
   local source="$1"
   if [[ "$source" == https://* ]]; then

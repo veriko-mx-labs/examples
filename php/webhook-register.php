@@ -1,12 +1,12 @@
 <?php
-// Register a webhook endpoint, send a test delivery and show its delivery history.
+// Registra un endpoint de webhook, envía una entrega de prueba y muestra su historial de entregas.
 //
 //   VERIKO_API_KEY=veriko_... php php/webhook-register.php https://example.com/hooks/veriko [--delete]
 //
-// The URL must be a public HTTPS address that answers 2xx: run `webhook-receiver.php` behind a
-// tunnel while you try it. The response carries the signing `secret` once; store it
-// as VERIKO_WEBHOOK_SECRET for the receiver. The endpoint subscribes to all seven validation
-// events, so `validation.returned` reports a later return.
+// La URL debe ser una dirección HTTPS pública que responda 2xx: mientras pruebas, corre
+// `webhook-receiver.php` detrás de un túnel. La respuesta trae el `secret` de firma una sola vez;
+// guárdalo como VERIKO_WEBHOOK_SECRET para el receptor. El endpoint se suscribe a los siete
+// eventos de validación, así que `validation.returned` avisa de una devolución posterior.
 //
 // veriko:operation POST /webhooks body=url,events,description
 // veriko:operation POST /webhooks/{id}/test
@@ -20,13 +20,13 @@ require __DIR__ . '/client.php';
 run(function () use ($argv): void {
     $url = $argv[1] ?? null;
     if ($url === null) {
-        fwrite(STDERR, "Usage: php webhook-register.php <public https URL> [--delete]\n");
+        fwrite(STDERR, "Uso: php webhook-register.php <URL https pública> [--delete]\n");
         exit(2);
     }
 
     $created = api('POST', '/webhooks', ['body' => [
         'url' => $url,
-        'description' => 'Example endpoint',
+        'description' => 'Endpoint de ejemplo',
         'events' => [
             'validation.completed',
             'validation.failed',
@@ -39,11 +39,11 @@ run(function () use ($argv): void {
     ]])['body']['data'];
     $id = $created['id'];
     echo "Endpoint {$id}\n";
-    echo "Secret (shown once): {$created['attributes']['secret']}\n";
+    echo "Secreto (se muestra una vez): {$created['attributes']['secret']}\n";
 
-    // The test returns 200 even when delivery failed: check `delivered`.
+    // La prueba responde 200 aunque la entrega falle: revisa `delivered`.
     $result = api('POST', "/webhooks/{$id}/test")['body']['data']['attributes'];
-    echo 'Test delivered=', $result['delivered'] ? 'true' : 'false', ' http_status=', $result['http_status'] ?? '-', ' ', $result['error'] ?? '', "\n";
+    echo 'Prueba delivered=', $result['delivered'] ? 'true' : 'false', ' http_status=', $result['http_status'] ?? '-', ' ', $result['error'] ?? '', "\n";
 
     $deliveries = api('GET', "/webhooks/{$id}/deliveries", ['query' => ['per_page' => 5]])['body']['data'];
     foreach ($deliveries as $delivery) {
@@ -52,6 +52,6 @@ run(function () use ($argv): void {
 
     if (in_array('--delete', $argv, true)) {
         api('DELETE', "/webhooks/{$id}");
-        echo "Deleted {$id}\n";
+        echo "Eliminado {$id}\n";
     }
 });

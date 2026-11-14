@@ -1,21 +1,21 @@
-# Contributing
+# Cómo contribuir
 
-Issues and pull requests are welcome.
+Los issues y los pull requests son bienvenidos.
 
-## Report a bug or request a change
+## Reportar un error o pedir un cambio
 
-Open an issue with the [bug report](https://github.com/veriko-mx-labs/examples/issues/new?template=bug_report.yml) or [feature request](https://github.com/veriko-mx-labs/examples/issues/new?template=feature_request.yml) form. Search the open issues first.
+Abre un issue con el formulario de [reporte de error](https://github.com/veriko-mx-labs/examples/issues/new?template=bug_report.yml) o de [solicitud de mejora](https://github.com/veriko-mx-labs/examples/issues/new?template=feature_request.yml). Antes, busca entre los issues abiertos.
 
-A bug report needs the versions you use, the steps that reproduce it and, when the API answered with an error, its `request_id`. Remove API keys, receipts, account numbers and customer data from anything you paste.
+Un reporte de error necesita las versiones que usas, los pasos para reproducirlo y, cuando la API respondió con un error, su `request_id`. Quita las claves de API, los comprobantes, los números de cuenta y los datos de clientes de todo lo que pegues.
 
-Do not open a public issue for a security vulnerability. Follow [SECURITY.md](SECURITY.md).
+No abras un issue público para una vulnerabilidad de seguridad. Sigue [SECURITY.md](SECURITY.md).
 
-## Propose a change
+## Proponer un cambio
 
-1. For anything larger than a fix, open an issue first so the change can be agreed before you write it.
-2. Fork the repository and create a branch from `main`.
-3. Make the change. Add the example with its `veriko:operation` line and its README row.
-4. Run the checks of this repository:
+1. Si el cambio es más grande que una corrección, abre antes un issue para acordarlo antes de escribirlo.
+2. Haz un fork del repositorio y crea una rama desde `main`.
+3. Haz el cambio. Agrega el ejemplo con su línea `veriko:operation` y su fila en el README.
+4. Corre las comprobaciones de este repositorio:
 
    ```bash
    npm ci
@@ -23,16 +23,16 @@ Do not open a public issue for a security vulnerability. Follow [SECURITY.md](SE
    npm test
    ```
 
-   `npm run lint` checks the syntax of each example with the interpreters you have installed: `bash`, `node`, `python3` and `php`. CI also runs `node scripts/check-syntax.mjs --require`, which fails when an interpreter is missing. Use Node.js 18 or later, Python 3.9 or later and PHP 8.1 or later.
-5. Update README.md when the behavior that users see changes.
-6. Open a pull request against `main` and fill in the template.
+   `npm run lint` revisa la sintaxis de cada ejemplo con los intérpretes que tengas instalados: `bash`, `node`, `python3` y `php`. El CI también corre `node scripts/check-syntax.mjs --require`, que falla cuando falta un intérprete. Usa Node.js 18 o posterior, Python 3.9 o posterior y PHP 8.1 o posterior.
+5. Actualiza README.md cuando cambie lo que ven quienes usan los ejemplos.
+6. Abre un pull request contra `main` y llena la plantilla.
 
-Write commit messages in English, in the imperative, and keep one change in each commit.
+Escribe los mensajes de commit en español, en imperativo, y deja un solo cambio por commit.
 
-A new example needs a `veriko:operation` line that declares the operations it calls, and a row in the flows table of the README. `npm test` checks both against the spec.
+Un ejemplo nuevo necesita una línea `veriko:operation` que declare las operaciones que llama y una fila en la tabla de flujos del README. `npm test` revisa las dos contra el spec.
 
-Examples do not send real data. Use made-up transfers and read the API key from `VERIKO_API_KEY`.
+Los ejemplos no envían datos reales. Usa transferencias inventadas y lee la clave de API de `VERIKO_API_KEY`.
 
-## The API contract
+## El contrato de la API
 
-The API contract is the public spec at <https://docs.veriko.mx/openapi.yaml>. `spec/openapi.yaml` is a copy that a scheduled workflow syncs. Do not edit it by hand. When the API behaves differently from the spec, open an issue.
+El contrato de la API es el spec público en <https://docs.veriko.mx/openapi.yaml>. `spec/openapi.yaml` es una copia que sincroniza un workflow programado. No la edites a mano. Cuando la API se comporte distinto del spec, abre un issue.

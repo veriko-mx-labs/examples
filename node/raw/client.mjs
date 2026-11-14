@@ -1,43 +1,43 @@
 // veriko:operation GET /validations/{id} headers=If-None-Match
-// Shared helper for the raw HTTP examples in this directory: no dependencies, Node 18 or later.
-// It reads the key from VERIKO_API_KEY, sends every request with a timeout, checks the HTTP
-// status before parsing the body, and turns any error response into an `ApiError`.
+// Funciones compartidas de los ejemplos HTTP directos de este directorio: sin dependencias, Node 18 o posterior.
+// Lee la clave de VERIKO_API_KEY, envía cada petición con un tiempo límite, revisa el estado
+// HTTP antes de analizar el cuerpo y convierte cualquier respuesta de error en un `ApiError`.
 
 export const BASE_URL = (process.env.VERIKO_BASE_URL ?? 'https://api.veriko.mx/v1').replace(/\/+$/u, '');
 
-// Statuses where the validation is final: stop polling when `data.attributes.status` is one of them.
+// Estados en los que la validación es final: deja de sondear cuando `data.attributes.status` es uno de ellos.
 export const TERMINAL_STATUSES = new Set(['valid', 'not_found', 'cep_unavailable', 'invalid', 'returned', 'failed', 'error']);
-// Statuses worth retrying: the failure belongs to the moment, not to the request.
+// Estados que vale la pena reintentar: la falla es del momento, no de la petición.
 export const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
-// The synchronous validation can hold the connection for up to about a minute.
+// La validación síncrona puede mantener la conexión abierta hasta cerca de un minuto.
 export const SYNC_TIMEOUT_MS = 75_000;
 export const DEFAULT_TIMEOUT_MS = 30_000;
 
 export class ApiError extends Error {
   constructor(status, errors, requestId, retryAfter) {
     const first = errors[0] ?? {};
-    super(`HTTP ${status} ${first.code ?? 'unknown'}: ${first.detail ?? 'no detail'}`);
+    super(`HTTP ${status} ${first.code ?? 'desconocido'}: ${first.detail ?? 'sin detalle'}`);
     this.status = status;
-    this.errors = errors; // every entry of `errors[]`: branch on `code`, never on `detail`
+    this.errors = errors; // cada entrada de `errors[]`: decide con `code`, nunca con `detail`
     this.code = first.code ?? `http_${status}`;
     this.hint = first.hint;
     this.requestId = requestId;
-    this.retryAfter = retryAfter; // seconds, from the Retry-After header
+    this.retryAfter = retryAfter; // segundos, de la cabecera Retry-After
   }
 }
 
 export function apiKey() {
   const key = process.env.VERIKO_API_KEY;
   if (!key) {
-    console.error('Set VERIKO_API_KEY to your API key (it starts with veriko_).');
+    console.error('Define VERIKO_API_KEY con tu clave de API (empieza con veriko_).');
     process.exit(1);
   }
   return key;
 }
 
-// Sends one request. Resolves with { status, headers, body } for any 2xx or 304.
-// `body` is parsed JSON, or a Buffer when `binary` is true. Rejects with ApiError otherwise.
+// Envía una petición. Se resuelve con { status, headers, body } con cualquier 2xx o 304.
+// `body` es el JSON ya analizado, o un Buffer cuando `binary` es true. En otro caso se rechaza con ApiError.
 export async function api(method, path, { query, body, headers = {}, timeoutMs = DEFAULT_TIMEOUT_MS, binary = false } = {}) {
   const url = new URL(`${BASE_URL}${path}`);
   for (const [name, value] of Object.entries(query ?? {})) {
@@ -58,7 +58,7 @@ export async function api(method, path, { query, body, headers = {}, timeoutMs =
   if (response.status === 304) return { status: 304, headers: response.headers, body: null };
 
   if (!response.ok) {
-    // An error is not always JSON: a gateway can answer 502 with HTML.
+    // Un error no siempre es JSON: un gateway puede responder 502 con HTML.
     const text = await response.text();
     let errors = [{ status: String(response.status), code: `http_${response.status}`, detail: text.slice(0, 200) }];
     let requestId;
@@ -67,7 +67,7 @@ export async function api(method, path, { query, body, headers = {}, timeoutMs =
       if (Array.isArray(parsed.errors) && parsed.errors.length > 0) errors = parsed.errors;
       requestId = parsed.meta?.request_id;
     } catch {
-      // Keep the fallback entry.
+      // Se conserva la entrada de respaldo.
     }
     const retryAfter = Number(response.headers.get('retry-after'));
     throw new ApiError(response.status, errors, requestId, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : undefined);
@@ -80,9 +80,9 @@ export async function api(method, path, { query, body, headers = {}, timeoutMs =
 
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Retries `send` on retryable failures, waiting for Retry-After when the API sends it and
-// backing off exponentially otherwise. Only pass a `send` that is safe to repeat: a GET, a PUT,
-// or a POST that carries an Idempotency-Key.
+// Reintenta `send` cuando la falla se puede reintentar: espera Retry-After si la API lo envía y,
+// si no, espera cada vez más (retroceso exponencial). Pasa sólo un `send` que se pueda repetir
+// sin riesgo: un GET, un PUT o un POST que lleve Idempotency-Key.
 export async function withRetry(send, { attempts = 5, baseDelayMs = 1000 } = {}) {
   for (let attempt = 1; ; attempt += 1) {
     try {
@@ -92,24 +92,24 @@ export async function withRetry(send, { attempts = 5, baseDelayMs = 1000 } = {})
       const retryable =
         network ||
         (error instanceof ApiError &&
-          // A spent quota stays spent until the plan renews: retrying cannot help.
+          // Una cuota agotada sigue agotada hasta que el plan se renueva: reintentar no ayuda.
           error.code !== 'quota_exceeded' &&
           (RETRYABLE_STATUSES.has(error.status) || error.code === 'idempotency_key_in_progress'));
       if (!retryable || attempt >= attempts) throw error;
       const backoff = baseDelayMs * 2 ** (attempt - 1) * (0.5 + Math.random() / 2);
       const wait = error instanceof ApiError && error.retryAfter ? error.retryAfter * 1000 : backoff;
-      console.error(`Attempt ${attempt} failed (${error.code ?? error.name}); retrying in ${Math.round(wait / 1000)} s.`);
+      console.error(`El intento ${attempt} falló (${error.code ?? error.name}); reintento en ${Math.round(wait / 1000)} s.`);
       await sleep(wait);
     }
   }
 }
 
-// Polls GET /validations/{id} until the status is terminal. Honors Retry-After and
-// meta.next_poll_after_seconds, sends the ETag back as If-None-Match, and stops at `expiresAt`.
+// Sondea GET /validations/{id} hasta que el estado sea final. Respeta Retry-After y
+// meta.next_poll_after_seconds, devuelve el ETag en If-None-Match y se detiene en `expiresAt`.
 export async function pollValidation(id, { expiresAt } = {}) {
   let etag;
   for (;;) {
-    let wait = 2; // seconds until the next poll; 304 means nothing changed
+    let wait = 2; // segundos hasta el siguiente sondeo; 304 significa que nada cambió
     const response = await withRetry(() =>
       api('GET', `/validations/${id}`, { headers: etag ? { 'If-None-Match': etag } : {} }),
     );
@@ -117,23 +117,23 @@ export async function pollValidation(id, { expiresAt } = {}) {
       etag = response.headers.get('etag') ?? etag;
       const { status } = response.body.data.attributes;
       if (TERMINAL_STATUSES.has(status)) return response.body;
-      console.error(`Status: ${status}`);
+      console.error(`Estado: ${status}`);
       wait = Number(response.headers.get('retry-after') ?? response.body.meta?.next_poll_after_seconds ?? 2);
     }
     if (expiresAt && Date.now() + wait * 1000 > Date.parse(expiresAt)) {
-      throw new Error(`The validation ${id} did not reach a final status before ${expiresAt}.`);
+      throw new Error(`La validación ${id} no llegó a un estado final antes de ${expiresAt}.`);
     }
     await sleep(wait * 1000);
   }
 }
 
-// Prints an ApiError the way an operator needs it, then exits non-zero.
+// Imprime un ApiError como lo necesita quien opera el programa y termina con un código distinto de cero.
 export function fail(error) {
   if (error instanceof ApiError) {
-    console.error(`HTTP ${error.status} ${error.code}${error.requestId ? ` (request ${error.requestId})` : ''}`);
+    console.error(`HTTP ${error.status} ${error.code}${error.requestId ? ` (petición ${error.requestId})` : ''}`);
     for (const entry of error.errors) {
       console.error(`  ${entry.detail ?? ''}${entry.source?.pointer ? ` [${entry.source.pointer}]` : ''}`);
-      if (entry.hint) console.error(`  hint: ${entry.hint}`);
+      if (entry.hint) console.error(`  sugerencia: ${entry.hint}`);
     }
   } else {
     console.error(error?.stack ?? String(error));
@@ -141,7 +141,7 @@ export function fail(error) {
   process.exit(1);
 }
 
-// Runs `main` and exits non-zero on any failure.
+// Corre `main` y termina con un código distinto de cero ante cualquier falla.
 export function run(main) {
   main().catch(fail);
 }

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Validate a SPEI transfer by its fields, waiting for the verdict in the same request.
+# Valida una transferencia SPEI por sus campos y espera el veredicto en la misma petición.
 #
 #   VERIKO_API_KEY=veriko_... bash curl/validate.sh
 #
-# Every accepted validation consumes quota, including one that ends in `not_found`.
-# The transfer below is example data: it does not exist at Banxico, so expect `not_found`.
-# Replace it with a real transfer to get `valid`.
+# Cada validación aceptada consume cuota, también la que termina en `not_found`.
+# La transferencia de abajo es de ejemplo: no existe en Banxico, así que espera `not_found`.
+# Cámbiala por una transferencia real para obtener `valid`.
 #
 # veriko:operation POST /validate body=send_date,amount,tracking_key,sender_bank,beneficiary_account
 # veriko:operation GET /validations/{id}
@@ -23,10 +23,10 @@ TIMEOUT=$SYNC_TIMEOUT api POST /validate \
   }'
 
 if [[ "$STATUS" == "202" ]]; then
-  # Banxico took longer than 45 s: the validation continues in the background.
-  echo "Still $(jq -r '.data.attributes.status' "$BODY_FILE") ($(jq -r '.meta.async_reason' "$BODY_FILE")); polling." >&2
+  # Banxico tardó más de 45 s: la validación sigue en segundo plano.
+  echo "Sigue en $(jq -r '.data.attributes.status' "$BODY_FILE") ($(jq -r '.meta.async_reason' "$BODY_FILE"))); sondeando." >&2
   poll_validation "$(jq -r '.data.id' "$BODY_FILE")" "$(jq -r '.data.attributes.expires_at // empty' "$BODY_FILE")"
 fi
 
 jq -r '"\(.data.id) \(.data.attributes.status)"' "$BODY_FILE"
-jq -r '.data.links.cep_pdf // empty | "CEP available: " + .' "$BODY_FILE"
+jq -r '.data.links.cep_pdf // empty | "CEP disponible: " + .' "$BODY_FILE"

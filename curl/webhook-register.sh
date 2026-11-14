@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Register a webhook endpoint, send a test delivery and show its delivery history.
+# Registra un endpoint de webhook, envía una entrega de prueba y muestra su historial de entregas.
 #
 #   VERIKO_API_KEY=veriko_... bash curl/webhook-register.sh https://example.com/hooks/veriko [--delete]
 #
-# The URL must be a public HTTPS address that answers 2xx: run a receiver from node/, python/ or
-# php/ behind a tunnel while you try it. The response carries the signing `secret` once; store it
-# as VERIKO_WEBHOOK_SECRET for the receiver. The endpoint subscribes to all seven validation
-# events, so `validation.returned` reports a later return.
+# La URL debe ser una dirección HTTPS pública que responda 2xx: mientras pruebas, corre un receptor
+# de node/, python/ o php/ detrás de un túnel. La respuesta trae el `secret` de firma una sola
+# vez; guárdalo como VERIKO_WEBHOOK_SECRET para el receptor. El endpoint se suscribe a los siete
+# eventos de validación, así que `validation.returned` avisa de una devolución posterior.
 #
 # veriko:operation POST /webhooks body=url,events,description
 # veriko:operation POST /webhooks/{id}/test
@@ -15,11 +15,11 @@
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-url="${1:?Usage: webhook-register.sh <public https URL> [--delete]}"
+url="${1:?Uso: webhook-register.sh <URL https pública> [--delete]}"
 
 jq -n --arg url "$url" '{
   url: $url,
-  description: "Example endpoint",
+  description: "Endpoint de ejemplo",
   events: [
     "validation.completed", "validation.failed", "validation.error", "validation.returned",
     "validation.retry.scheduled", "validation.retry.resolved", "validation.retry.exhausted"
@@ -31,16 +31,16 @@ api POST /webhooks \
   --data-binary "@$WORK_DIR/request.json"
 id="$(jq -r '.data.id' "$BODY_FILE")"
 echo "Endpoint ${id}"
-echo "Secret (shown once): $(jq -r '.data.attributes.secret' "$BODY_FILE")"
+echo "Secreto (se muestra una vez): $(jq -r '.data.attributes.secret' "$BODY_FILE")"
 
-# The test returns 200 even when delivery failed: check `delivered`.
+# La prueba responde 200 aunque la entrega falle: revisa `delivered`.
 api POST "/webhooks/${id}/test"
-jq -r '.data.attributes | "Test delivered=\(.delivered) http_status=\(.http_status) \(.error // "")"' "$BODY_FILE"
+jq -r '.data.attributes | "Prueba delivered=\(.delivered) http_status=\(.http_status) \(.error // "")"' "$BODY_FILE"
 
 api GET "/webhooks/${id}/deliveries?per_page=5"
 jq -r '.data[] | "\(.id) \(.attributes.status)"' "$BODY_FILE"
 
 if [[ "${2:-}" == "--delete" ]]; then
   api DELETE "/webhooks/${id}"
-  echo "Deleted ${id}"
+  echo "Eliminado ${id}"
 fi

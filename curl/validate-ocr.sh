@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Validate a SPEI transfer from its receipt: an image or a PDF of 1 to 3 pages.
+# Valida una transferencia SPEI a partir de su comprobante: una imagen o un PDF de 1 a 3 páginas.
 #
-#   VERIKO_API_KEY=veriko_... bash curl/validate-ocr.sh path/to/receipt.png
-#   VERIKO_API_KEY=veriko_... bash curl/validate-ocr.sh https://example.com/receipt.png
+#   VERIKO_API_KEY=veriko_... bash curl/validate-ocr.sh ruta/al/comprobante.png
+#   VERIKO_API_KEY=veriko_... bash curl/validate-ocr.sh https://example.com/comprobante.png
 #
-# The argument is a local file (sent as base64) or an HTTPS URL (sent as `image_url`).
-# Every accepted validation consumes quota. A receipt that is unreadable or is not a SPEI
-# receipt is rejected with 422 (`image_not_readable_receipt`, `image_not_spei_receipt`) and
-# the validation is still charged.
+# El argumento es un archivo local (se envía en base64) o una URL HTTPS (se envía como `image_url`).
+# Cada validación aceptada consume cuota. Un comprobante que no se puede leer o que no es de
+# SPEI se rechaza con 422 (`image_not_readable_receipt`, `image_not_spei_receipt`) y la
+# validación se cobra de todos modos.
 #
 # veriko:operation POST /validate-ocr body=image,image_url
 # veriko:operation GET /validations/{id}
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-source_arg="${1:?Usage: validate-ocr.sh <receipt file or https URL>}"
+source_arg="${1:?Uso: validate-ocr.sh <archivo del comprobante o URL https>}"
 receipt_body "$source_arg" > "$WORK_DIR/request.json"
 
 TIMEOUT=$SYNC_TIMEOUT api POST /validate-ocr \

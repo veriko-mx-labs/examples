@@ -1,15 +1,15 @@
-// Receive Veriko webhooks: verify the timestamped signature, reject stale deliveries, deduplicate.
+// Recibe los webhooks de Veriko: verifica la firma con marca de tiempo, rechaza las entregas vencidas y descarta las repetidas.
 //
-//   VERIKO_WEBHOOK_SECRET=<secret from POST /webhooks> node node/raw/webhook-receiver.mjs
+//   VERIKO_WEBHOOK_SECRET=<secreto de POST /webhooks> node node/raw/webhook-receiver.mjs
 //
-// Optional: VERIKO_WEBHOOK_SECRET_PREVIOUS keeps the receiver working for the 24 hours after you
-// rotate the secret, because the API then also sends `X-Webhook-Signature-Old`, signed with the
-// previous secret. PORT defaults to 3000.
+// Opcional: VERIKO_WEBHOOK_SECRET_PREVIOUS mantiene el receptor funcionando durante las 24 horas
+// posteriores a rotar el secreto, porque la API envía entonces también `X-Webhook-Signature-Old`,
+// firmada con el secreto anterior. PORT es 3000 por defecto.
 //
-// The signature covers the body exactly as received, so the receiver reads the raw bytes and
-// parses the JSON only after the check. `t` must be within 5 minutes of this machine's clock:
-// the window applies to `t`, the time of that attempt, not to the `timestamp` in the body,
-// because a retry arrives up to about 8.6 hours after the event with a new `t`.
+// La firma cubre el cuerpo tal como llegó, así que el receptor lee los bytes sin procesar y
+// analiza el JSON hasta después de la verificación. `t` debe estar a menos de 5 minutos del reloj
+// de esta máquina: la ventana aplica a `t`, la hora de ese intento, y no al `timestamp` del
+// cuerpo, porque un reintento llega hasta unas 8.6 horas después del evento con un `t` nuevo.
 
 // veriko:receiver
 
@@ -19,15 +19,15 @@ import { createServer } from 'node:http';
 const SECRET = process.env.VERIKO_WEBHOOK_SECRET;
 const PREVIOUS_SECRET = process.env.VERIKO_WEBHOOK_SECRET_PREVIOUS;
 const TOLERANCE_SECONDS = 300;
-const seen = new Set(); // use a shared store with a 24-hour expiry in production
+const seen = new Set(); // en producción usa un almacén compartido con vencimiento de 24 horas
 
 if (!SECRET) {
-  console.error('Set VERIKO_WEBHOOK_SECRET to the secret returned when you registered the endpoint.');
+  console.error('Define VERIKO_WEBHOOK_SECRET con el secreto que recibiste al registrar el endpoint.');
   process.exit(1);
 }
 
-// `header` is `t=<seconds>,v1=<hex>`. Returns true when `v1` matches HMAC-SHA256 of `<t>.<body>`
-// and `t` is inside the tolerance window.
+// `header` es `t=<segundos>,v1=<hex>`. Devuelve true cuando `v1` coincide con el HMAC-SHA256 de `<t>.<cuerpo>`
+// y `t` está dentro de la ventana de tolerancia.
 function verifyTimestamped(rawBody, header, secret) {
   if (!header) return false;
   const fields = Object.fromEntries(header.split(',').map((part) => part.trim().split('=')));
@@ -40,7 +40,7 @@ function verifyTimestamped(rawBody, header, secret) {
 
 function isAuthentic(rawBody, headers) {
   if (verifyTimestamped(rawBody, headers['x-webhook-signature-timestamped'], SECRET)) return true;
-  // During a rotation, a delivery queued before the change carries the old signature.
+  // Durante una rotación, una entrega que quedó en cola antes del cambio lleva la firma anterior.
   return PREVIOUS_SECRET !== undefined && verifyTimestamped(rawBody, headers['x-webhook-signature-old'], PREVIOUS_SECRET);
 }
 
@@ -54,24 +54,24 @@ const server = createServer((req, res) => {
   req.on('end', () => {
     const rawBody = Buffer.concat(chunks);
     if (!isAuthentic(rawBody, req.headers)) {
-      res.writeHead(401).end(); // a 4xx other than 408 and 429 is not retried
+      res.writeHead(401).end(); // un 4xx distinto de 408 y 429 no se reintenta
       return;
     }
 
-    // Answer 2xx first, process afterwards: the sender waits 10 seconds at most.
+    // Responde 2xx primero y procesa después: quien envía espera 10 segundos como máximo.
     res.writeHead(200).end();
 
     const deliveryId = req.headers['x-veriko-delivery-id'];
-    if (deliveryId && seen.has(deliveryId)) return; // a retry of a delivery already handled
+    if (deliveryId && seen.has(deliveryId)) return; // es un reintento de una entrega que ya se atendió
     if (deliveryId) seen.add(deliveryId);
 
     const event = JSON.parse(rawBody.toString('utf8'));
     const { id, attributes } = event.data;
     console.log(`${event.event} ${id} status=${attributes.status} client_ref=${attributes.client_ref ?? '-'}`);
     if (event.event === 'validation.completed' && attributes.status === 'valid') {
-      // Before releasing goods, compare `attributes.banxico_confirmed` (amount, account) with your order.
+      // Antes de entregar la mercancía, compara `attributes.banxico_confirmed` (monto, cuenta) con tu pedido.
     }
   });
 });
 
-server.listen(Number(process.env.PORT ?? 3000), () => console.log('Listening for webhooks'));
+server.listen(Number(process.env.PORT ?? 3000), () => console.log('Escuchando webhooks'));

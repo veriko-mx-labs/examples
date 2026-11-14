@@ -1,11 +1,11 @@
-// Handle API errors: check the HTTP status first, branch on `errors[].code`, show `detail` and `hint`.
+// Maneja los errores de la API: revisa primero el estado HTTP, decide con `errors[].code` y muestra `detail` y `hint`.
 //
 //   VERIKO_API_KEY=veriko_... node node/raw/error-handling.mjs
 //
-// This script sends an invalid request on purpose (a `422`). The API rejects it before it
-// reaches Banxico, so it consumes no quota.
-// Branch on `code`: it is stable and never translated. `detail` changes with the
-// `Accept-Language` header and may be reworded, so show it but do not compare it.
+// Este script envía a propósito una petición inválida (un `422`). La API la rechaza antes de
+// llegar a Banxico, así que no consume cuota.
+// Decide con `code`: es estable y nunca se traduce. `detail` cambia con la cabecera
+// `Accept-Language` y puede reformularse, así que muéstralo pero no lo compares.
 //
 // veriko:operation POST /validate body=amount,beneficiary_account
 
@@ -13,23 +13,23 @@ import { ApiError, SYNC_TIMEOUT_MS, api, run } from './client.mjs';
 
 run(async () => {
   try {
-    // Neither `tracking_key` nor `numeric_reference`: the API cannot look the payment up.
+    // No trae `tracking_key` ni `numeric_reference`: la API no puede buscar el pago.
     await api('POST', '/validate', { timeoutMs: SYNC_TIMEOUT_MS, body: { amount: 100, beneficiary_account: '012180004412345678' } });
   } catch (error) {
-    if (!(error instanceof ApiError)) throw error; // a timeout or a network failure
-    // A 422 lists a summary entry and then one entry per invalid field: read the whole array.
+    if (!(error instanceof ApiError)) throw error; // un tiempo límite agotado o una falla de red
+    // Un 422 trae una entrada de resumen y luego una por cada campo inválido: lee todo el arreglo.
     for (const entry of error.errors) {
-      console.log(`${entry.code}${entry.source?.pointer ? ` at ${entry.source.pointer}` : ''}: ${entry.detail}`);
+      console.log(`${entry.code}${entry.source?.pointer ? ` en ${entry.source.pointer}` : ''}: ${entry.detail}`);
     }
     switch (error.code) {
       case 'quota_exceeded':
-        console.log('The plan quota is spent. Do not retry; upgrade the plan or wait for the renewal.');
+        console.log('Se agotó la cuota del plan. No reintentes; cambia de plan o espera a la renovación.');
         break;
       case 'rate_limit_exceeded':
-        console.log(`Rate limited. Retry after ${error.retryAfter ?? 60} s.`);
+        console.log(`Límite de tasa alcanzado. Reintenta en ${error.retryAfter ?? 60} s.`);
         break;
       default:
-        console.log(`Request ${error.requestId ?? 'unknown'} failed with HTTP ${error.status}.`);
+        console.log(`La petición ${error.requestId ?? 'desconocida'} falló con HTTP ${error.status}.`);
     }
     process.exitCode = 1;
   }
